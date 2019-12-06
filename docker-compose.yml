@@ -11,7 +11,7 @@ services:
         links: 
           - 'api:webapi'
     api:
-        build: .
+        image: 'ccorrearestr/api'
         ports:
             - '5000:5000'
         volumes:
