@@ -1,21 +1,19 @@
 # our base image
-FROM alpine:latest
+FROM python:3.7
 
-# Install python and pip
-RUN apk add --update py2-pip
+# We copy just the requirements.txt first to leverage Docker cache
+COPY ./requirements.txt /app/requirements.txt
 
-# upgrade pip
-RUN pip install --upgrade pip
+WORKDIR /app
 
-# install Python modules needed by the Python app
-COPY requirements.txt /usr/src/app/
-RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt
+RUN pip install -r requirements.txt
 
-# copy files required for the app to run
-COPY app.py /usr/src/app/
+RUN pip install pymongo Flask-Cors
 
-# tell the port number the container should expose
-EXPOSE 80
+COPY . /app
 
-# run the application
-CMD ["python", "/usr/src/app/app.py"]
+ENTRYPOINT [ "python" ]
+
+CMD [ "app.py" ]
+
+EXPOSE 5000

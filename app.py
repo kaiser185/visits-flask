@@ -1,23 +1,43 @@
-from flask import Flask 
-from redis import Redis, RedisError 
-import os 
-import socket 
+# compose_flask/app.py
+from flask import Flask, request, jsonify
+from pymongo import MongoClient
+from bson import ObjectId
+from flask_cors import CORS
+import json
+import sys
 
-# Connect to Redis 
-redis = Redis(host="redis", db=0, socket_connect_timeout=2, socket_timeout=2) 
-app = Flask(__name__) 
-@app.route("/") 
-def hello(): 
-    try: 
-        visits = redis.incr("counter") 
-    except RedisError: 
-        visits = "<i>cannot connect to Redis, counter disabled</i>" 
-    html = "<h1>Timoth&eacute;e BORELLE</h1>" \
-	"<h3>Hello {name}!</h3>" \
-        "<b>Hostname:</b> {hostname}<br/>" \
-        "<b>Visits:</b> {visits}" 
-    return html.format(name=os.getenv("NAME", "world"), \
-    hostname=socket.gethostname(), visits=visits) 
+
+app = Flask(__name__)
+client = MongoClient('mongodb://root:root@mongo:27017')
+db = client.db
+users = db.users
+CORS(app)
+
+@app.route('/create', methods=['GET'])
+def create():
+    if 'user' in request.args and 'pwd' in request.args:
+        user = request.args['user']
+        pwd = request.args['pwd']
+        result = users.insert_one({
+            'user': str(user),
+            'pwd': str(pwd)
+        })
+    else:
+        return "Error: No id field provided. Please specify an id.", 500
     
-if __name__ == "__main__": 
-    app.run(host='0.0.0.0', port=80)
+    return "OK", 200
+
+@app.route('/login', methods=['GET'])
+def login():
+    if 'user' in request.args and 'pwd' in request.args:
+        usr = request.args['user']
+        found_usr = users.find_one({'user':usr})
+        if found_usr != None and found_usr['pwd'] == request.args['pwd']:
+            return "OK", 200
+    
+    return "NO", 500
+    
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
